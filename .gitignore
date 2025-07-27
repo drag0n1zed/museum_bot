@@ -267,7 +267,6 @@ lerna-debug.log*
 
 # Data files
 *.csv
-*.json
 *.xml
 *.yml
 *.yaml
@@ -278,3 +277,7 @@ lerna-debug.log*
 
 # Project specific
 museum_bot.egg-info/
+
+# Ignore actual data files, but not sample files
+data/raw_poi_data.json
+data/generated_tts_prompts.json

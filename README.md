@@ -103,6 +103,20 @@ The `data/raw_poi_data.json` file contains all the museum's point of interest in
 - Names and descriptions in multiple languages
 - Custom TTS prompts
 
+To use the application, you need to create a `data/raw_poi_data.json` file from the provided sample:
+
+```bash
+cp data/raw_poi_data.sample.json data/raw_poi_data.json
+```
+
+Then, you need to generate the TTS prompts by running:
+
+```bash
+python generate_tts_prompts.py
+```
+
+This will create a `data/generated_tts_prompts.json` file with all the necessary TTS prompts for the application.
+
 ## Development
 
 ### Project Components

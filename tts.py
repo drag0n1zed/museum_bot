@@ -13,7 +13,6 @@ import json
 import dashscope
 import pyaudio
 from dashscope.audio.tts_v2 import SpeechSynthesizer, AudioFormat, ResultCallback
-import importlib.resources
 
 # --- Configuration ---
 TEMP_MP3_PATH = os.path.join(os.path.dirname(__file__), "temp_tts_output.mp3")

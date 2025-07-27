@@ -3,7 +3,6 @@ import queue
 from enum import Enum
 from flask_socketio import SocketIO
 import json
-import importlib.resources
 
 
 # --- STATE MACHINE SETUP ---

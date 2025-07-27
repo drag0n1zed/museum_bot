@@ -5,7 +5,6 @@ Script to generate TTS prompts from raw POI data.
 
 import json
 import os
-import sys
 import importlib.resources
 
 
@@ -200,9 +199,9 @@ def save_prompts_to_package(prompts):
                 output_file_path = str(output_path)
             else:
                 # For Python 3.7-3.8, we'll assume a standard package structure
-                import museum_bot.data
+                import data
 
-                data_dir = os.path.dirname(museum_bot.data.__file__)
+                data_dir = os.path.dirname(data.__file__)
                 output_file_path = os.path.join(data_dir, "generated_tts_prompts.json")
 
             # Structure the output data

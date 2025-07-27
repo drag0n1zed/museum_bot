@@ -138,7 +138,7 @@ def run_generate_tts():
     # Import the TTS generation functionality
     try:
         # Try package import first
-        from museum_bot.generate_tts_prompts import main as generate_tts_main
+        from generate_tts_prompts import main as generate_tts_main
     except ImportError:
         try:
             # Try direct execution import
