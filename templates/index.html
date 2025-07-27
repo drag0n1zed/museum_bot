@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="{{ 'zh' if selected_language == 'ZH' else 'en' }}">
+<head>
+    <title>Robot Control Panel</title>
+    <!-- Basic styling -->
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 1em;
+            font-size: 18px; /* Larger base font size */
+        }
+        .is-busy { opacity: 0.5; cursor: not-allowed; }
+        .status {
+            background: #eee;
+            padding: 15px;
+            margin-bottom: 1em;
+            font-weight: bold;
+            font-size: 1.3em; /* Much larger status text */
+        }
+        .conversation-history {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 1.2em;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            font-size: 1.2em;
+        }
+        .user-message {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+        }
+        .ai-message {
+            background: #f1f8e9;
+            border-left: 5px solid #4caf50;
+        }
+        .message-sender {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .question-button {
+            display: block;
+            width: 100%;
+            padding: 20px; /* Much larger padding for better touch targets */
+            margin: 8px 0;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1.3em; /* Much larger button text */
+            font-weight: 500;
+        }
+        .question-button:hover {
+            background-color: #e0e0e0;
+        }
+        
+        /* Special styling for the "Ask Robot" button */
+        .ask-robot-button {
+            display: block;
+            width: 100%;
+            padding: 15px; /* Larger padding */
+            margin: 15px 0; /* More margin */
+            background-color: #4CAF50; /* Green background */
+            border: 2px solid #45a049; /* Darker green border */
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 1.3em; /* Larger font size */
+            font-weight: bold;
+            color: white; /* White text */
+        }
+        
+        .ask-robot-button:hover {
+            background-color: #45a049; /* Darker green on hover */
+        }
+        
+        /* Container for goto buttons */
+        .goto-buttons-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Change to 3 columns */
+            gap: 15px; /* Increase gap */
+            margin: 20px 0;
+        }
+        
+        /* More compact styling for goto buttons */
+        .goto-button {
+            padding: 15px; /* Much larger padding */
+            margin: 0;
+            font-size: 1.2em; /* Much larger font size */
+            width: 100%;
+            border-radius: 8px;
+        }
+        
+        /* Main layout container */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        /* Content section (top on portrait, left on landscape) */
+        .content-section {
+            flex: 1;
+        }
+        
+        /* Map section (bottom on portrait, right on landscape) */
+        .map-section {
+            flex: 1;
+        }
+        
+        /* Add some basic styling for the canvas */
+        .visualization-container {
+            position: relative; /* Crucial for layering */
+            width: 100%;
+            aspect-ratio: 3 / 2; /* Match map dimensions (12:8) */
+            margin: 15px 0;
+        }
+        #static-canvas, #dynamic-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #static-canvas { z-index: 1; background-color: #f0f0f0; }
+        #dynamic-canvas { z-index: 2; } /* Transparent by default */
+        
+        /* Questions section below map */
+        #questions-section {
+            margin-top: 30px;
+        }
+        
+        /* Landscape layout (side-by-side) */
+        @media (orientation: landscape) {
+            .main-container {
+                flex-direction: row;
+            }
+            .content-section {
+                flex: 1;
+                min-width: 300px;
+            }
+            .map-section {
+                flex: 1;
+                min-width: 400px;
+            }
+            .visualization-container {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            body {
+                font-size: 26px; /* Much larger base font size on mobile */
+                padding: 0.6em;
+            }
+            h1 {
+                font-size: 2.3em; /* Much larger heading */
+                margin: 0.4em 0;
+            }
+            h2 {
+                font-size: 2em; /* Much larger subheading */
+                margin: 0.7em 0 0.4em;
+            }
+            h3 {
+                font-size: 1.8em; /* Much larger sub-subheading */
+                margin: 0.7em 0 0.4em;
+            }
+            .status {
+                font-size: 1.7em; /* Much larger status text on mobile */
+                padding: 25px;
+                margin: 0.7em 0;
+            }
+            .question-button {
+                padding: 30px; /* Much larger padding on mobile */
+                font-size: 1.6em; /* Much larger button text on mobile */
+                margin: 12px 0;
+            }
+            .goto-button {
+                padding: 25px; /* Much larger padding on mobile */
+                font-size: 1.6em; /* Much larger font size on mobile */
+                margin: 8px 0;
+            }
+            .message {
+                font-size: 1.6em; /* Much larger message text on mobile */
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            .conversation-history {
+                font-size: 1.6em; /* Much larger conversation history text on mobile */
+                padding: 25px;
+                margin: 20px 0;
+            }
+            textarea {
+                font-size: 1.6em; /* Much larger text area font size on mobile */
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 8px;
+                border: 2px solid #ccc;
+            }
+            input[type="submit"] {
+                font-size: 1.6em;
+                padding: 20px 25px;
+                margin: 15px 0;
+                border-radius: 8px;
+            }
+            /* Special styling for the "Ask Robot" button on mobile */
+            .ask-robot-button {
+                padding: 25px; /* Even larger padding on mobile */
+                font-size: 1.8em; /* Even larger font size on mobile */
+                margin: 20px 0; /* More margin on mobile */
+            }
+            /* Prominent text elements on mobile */
+            .prominent-text {
+                font-size: 1.8em; /* Even larger for key UI elements */
+                font-weight: bold;
+            }
+            legend.prominent-text {
+                font-size: 2em; /* Largest for section headers */
+            }
+            .goto-buttons-container {
+                grid-template-columns: repeat(3, 1fr); /* Ensure 3 columns on mobile too */
+                gap: 25px;
+                margin: 30px 0;
+            }
+            #questions-section {
+                margin-top: 40px;
+            }
+        }
+        
+        /* Very small mobile devices */
+        @media (max-width: 480px) {
+            body {
+                font-size: 30px; /* Even larger base font size on very small screens */
+                padding: 0.3em;
+            }
+            h1 {
+                font-size: 2.5em;
+                margin: 0.3em 0;
+            }
+            h2 {
+                font-size: 2.2em;
+                margin: 0.6em 0 0.3em;
+            }
+            h3 {
+                font-size: 2em;
+                margin: 0.6em 0 0.3em;
+            }
+            .status {
+                font-size: 2em;
+                padding: 30px;
+                margin: 0.8em 0;
+            }
+            .question-button {
+                padding: 35px;
+                font-size: 1.7em;
+                margin: 15px 0;
+            }
+            .goto-button {
+                padding: 30px;
+                font-size: 1.7em;
+                margin: 10px 0;
+            }
+            .message {
+                font-size: 1.7em;
+                padding: 25px;
+                margin-bottom: 25px;
+            }
+            .conversation-history {
+                font-size: 1.7em;
+                padding: 30px;
+                margin: 25px 0;
+            }
+            textarea {
+                font-size: 1.7em;
+                padding: 25px;
+                margin: 20px 0;
+            }
+            input[type="submit"] {
+                font-size: 1.7em;
+                padding: 25px 30px;
+                margin: 20px 0;
+            }
+            /* Special styling for the "Ask Robot" button on very small mobile devices */
+            .ask-robot-button {
+                padding: 30px; /* Even larger padding on very small mobile devices */
+                font-size: 2em; /* Even larger font size on very small mobile devices */
+                margin: 25px 0; /* More margin on very small mobile devices */
+            }
+            /* Prominent text elements on very small mobile devices */
+            .prominent-text {
+                font-size: 2em; /* Even larger for key UI elements */
+                font-weight: bold;
+            }
+            legend.prominent-text {
+                font-size: 2.2em; /* Largest for section headers */
+            }
+            .goto-buttons-container {
+                gap: 25px;
+                margin: 30px 0;
+            }
+            #questions-section {
+                margin-top: 50px;
+            }
+        }
+        
+        /* Extra large mobile devices (between 481px and 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                font-size: 24px;
+                padding: 0.7em;
+            }
+            h1 {
+                font-size: 2.1em;
+            }
+            h2 {
+                font-size: 1.9em;
+            }
+            h3 {
+                font-size: 1.7em;
+            }
+            .status {
+                font-size: 1.6em;
+                padding: 22px;
+            }
+            .question-button {
+                padding: 28px;
+                font-size: 1.45em;
+            }
+            .goto-button {
+                padding: 22px;
+                font-size: 1.45em;
+            }
+            .message {
+                font-size: 1.45em;
+                padding: 18px;
+            }
+            .conversation-history {
+                font-size: 1.45em;
+                padding: 22px;
+            }
+            textarea {
+                font-size: 1.45em;
+                padding: 18px;
+            }
+            input[type="submit"] {
+                font-size: 1.45em;
+                padding: 18px 22px;
+            }
+            /* Special styling for the "Ask Robot" button on extra large mobile devices */
+            .ask-robot-button {
+                padding: 22px; /* Larger padding on extra large mobile devices */
+                font-size: 1.6em; /* Larger font size on extra large mobile devices */
+                margin: 18px 0; /* More margin on extra large mobile devices */
+            }
+            /* Prominent text elements on extra large mobile devices */
+            .prominent-text {
+                font-size: 1.3em; /* Larger for key UI elements */
+                font-weight: bold;
+            }
+            legend.prominent-text {
+                font-size: 1.5em; /* Largest for section headers */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ '博物馆导览暴走丸' if selected_language == 'ZH' else 'Museum Guide Robot' }}</h1>
+    
+    <div class="main-container">
+       <!-- Content section (left on desktop) -->
+       <div class="content-section">
+           <div class="status prominent-text" id="status-bar">
+               {{ '暴走丸状态:' if selected_language == 'ZH' else 'Robot Status:' }} <span id="robot-state">{{ robot_state }}</span>
+           </div>
+
+            <fieldset id="controls" {% if robot_state != 'IDLE' %}disabled class="is-busy"{% endif %}>
+                <legend class="prominent-text">{{ '控制' if selected_language == 'ZH' else 'Controls' }}</legend>
+                
+                <!-- Navigation -->
+                <form action="/goto" method="post" id="goto-form">
+                    <div class="prominent-text">{{ '前往:' if selected_language == 'ZH' else 'Go to:' }}</div>
+                    <div class="goto-buttons-container">
+                        {% for poi in destinations %}
+                            <button type="submit" name="poi_id" value="{{ poi.id }}" class="question-button goto-button">
+                                {% if poi.name is mapping %}
+                                {{ poi.name.en if selected_language == 'EN' else poi.name.zh }}
+                                {% else %}
+                                {% set name_parts = poi.name.split('. ') %}
+                                {{ name_parts[0] if selected_language == 'EN' else (name_parts[1] if name_parts|length > 1 else name_parts[0]) }}
+                                {% endif %}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </form>
+                <hr>
+ 
+                <!-- Ask Question -->
+                <form action="/ask" method="post" id="ask-form">
+                    <label for="question" class="prominent-text">{{ '提问:' if selected_language == 'ZH' else 'Ask a question:' }}</label><br>
+                    <textarea id="question" name="question" rows="3" style="width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #ccc;"></textarea><br><br>
+                    <input type="submit" value="{{ '询问暴走丸' if selected_language == 'ZH' else 'Ask Robot' }}" class="ask-robot-button" style="width: 100%;">
+                </form>
+            </fieldset>
+
+            <div id="response-area">
+                <h2 class="prominent-text">{{ '消息:' if selected_language == 'ZH' else 'Message:' }}</h2>
+                <div id="thinking-message" style="display: none; font-style: italic;">
+                    {{ '思考中...' if selected_language == 'ZH' else 'Thinking...' }}
+                </div>
+                <div id="conversation-history" class="conversation-history"></div>
+            </div>
+        </div>
+        
+        <!-- Map section (right on desktop) -->
+        <div class="map-section">
+            <div class="visualization-container">
+                <h2>{{ '暴走丸地图' if selected_language == 'ZH' else 'Robot Map' }}</h2>
+                <!-- Layered Canvases -->
+                <canvas id="static-canvas"></canvas>  <!-- For grid, POIs -->
+                <canvas id="dynamic-canvas"></canvas> <!-- For robot, path -->
+            </div>
+            <!-- Follow-up questions and arrival questions -->
+            <div id="questions-section">
+                <div id="arrival-questions-below-map" style="display: none;">
+                    <h3>{{ '到达问题:' if selected_language == 'ZH' else 'Arrival Questions:' }}</h3>
+                    <div id="arrival-questions-list-below-map"></div>
+                </div>
+                <div id="follow-up-questions-below-map" style="display: none;">
+                    <h3>{{ '后续问题:' if selected_language == 'ZH' else 'Follow-up Questions:' }}</h3>
+                    <div id="follow-up-questions-list-below-map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Javascript to provide real-time updates -->
+    <script>
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('robot-state').textContent = data.state;
+                    const controls = document.getElementById('controls');
+                    if (data.state !== 'IDLE') {
+                        controls.disabled = true;
+                        controls.classList.add('is-busy');
+                    } else {
+                        controls.disabled = false;
+                        controls.classList.remove('is-busy');
+                    }
+                    
+                    // Update HTML lang attribute
+                    document.documentElement.lang = data.language === 'ZH' ? 'zh' : 'en';
+                    
+                    // Show/hide thinking message
+                    const thinkingMessageDiv = document.getElementById('thinking-message');
+                    if (data.state === 'SPEAKING') {
+                        thinkingMessageDiv.style.display = 'block';
+                    } else {
+                        thinkingMessageDiv.style.display = 'none';
+                    }
+                    
+                    // Update arrival questions
+                    const arrivalQuestionsBelowMapDiv = document.getElementById('arrival-questions-below-map');
+                    const arrivalQuestionsBelowMapList = document.getElementById('arrival-questions-list-below-map');
+                    if (data.at_destination && data.arrival_questions && data.arrival_questions.length > 0 && !data.arrival_questions_shown) {
+                        arrivalQuestionsBelowMapDiv.style.display = 'block';
+                        let questionsHTML = '';
+                        data.arrival_questions.forEach(question => {
+                            questionsHTML += `<button class="question-button" onclick="askArrivalQuestion('${question}')">${question}</button>`;
+                        });
+                        arrivalQuestionsBelowMapList.innerHTML = questionsHTML;
+                    } else {
+                        arrivalQuestionsBelowMapDiv.style.display = 'none';
+                    }
+                    
+                    // Update conversation history (always)
+                    const conversationHistoryDiv = document.getElementById('conversation-history');
+                    conversationHistoryDiv.className = 'conversation-history';
+                    if (data.conversation_history && data.conversation_history.length > 0) {
+                        let historyHTML = '';
+                        // Display messages in reverse order (newest first)
+                        for (let i = data.conversation_history.length - 1; i >= 0; i--) {
+                            const [sender, message] = data.conversation_history[i];
+                            const senderLabel = sender === 'user' ?
+                                (data.language === 'ZH' ? '您: ' : 'You: ') :
+                                (data.language === 'ZH' ? '暴走丸: ' : 'Robot: ');
+                            const messageClass = sender === 'user' ? 'user-message' : 'ai-message';
+                            historyHTML += `<div class="message ${messageClass}"><span class="message-sender">${senderLabel}</span> ${message}</div>`;
+                        }
+                        conversationHistoryDiv.innerHTML = historyHTML;
+                    } else {
+                        conversationHistoryDiv.innerHTML = `<div class="message">${selected_language == 'ZH' ? '暂无消息' : 'No messages yet.'}</div>`;
+                    }
+                    
+                    // Update follow-up questions only when TTS is ready
+                    if (data.tts_ready) {
+                        const followUpQuestionsBelowMapDiv = document.getElementById('follow-up-questions-below-map');
+                        const followUpQuestionsBelowMapList = document.getElementById('follow-up-questions-list-below-map');
+                        if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+                            followUpQuestionsBelowMapDiv.style.display = 'block';
+                            let questionsHTML = '';
+                            data.follow_up_questions.forEach(question => {
+                                questionsHTML += `<button class="question-button" onclick="askFollowUpQuestion('${question}')">${question}</button>`;
+                            });
+                            followUpQuestionsBelowMapList.innerHTML = questionsHTML;
+                        } else {
+                            followUpQuestionsBelowMapDiv.style.display = 'none';
+                        }
+                    }
+                });
+        }
+        
+        function askArrivalQuestion(question) {
+            // Create a form and submit it to the ask_arrival_question endpoint
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/ask_arrival_question';
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'question';
+            input.value = question;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+            
+            // Hide arrival questions immediately after selection
+            const arrivalQuestionsBelowMapDiv = document.getElementById('arrival-questions-below-map');
+            arrivalQuestionsBelowMapDiv.style.display = 'none';
+        }
+        
+        function askFollowUpQuestion(question) {
+            // Create a form and submit it to the regular ask endpoint
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/ask';
+            
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'question';
+            input.value = question;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        }
+        
+        setInterval(updateStatus, 1000); // Poll every second
+        
+    </script>
+    
+    <!-- Load scripts at the end of the body -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/visualization.js') }}"></script>
+    
+</body>
+</html>
